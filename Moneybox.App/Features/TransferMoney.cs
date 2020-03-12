@@ -17,39 +17,39 @@ namespace Moneybox.App.Features
 
         public void Execute(Guid fromAccountId, Guid toAccountId, decimal amount)
         {
-            var from = this.accountRepository.GetAccountById(fromAccountId);
-            var to = this.accountRepository.GetAccountById(toAccountId);
+			var from = this.accountRepository.GetAccountById(fromAccountId);
+			var to = this.accountRepository.GetAccountById(toAccountId);
 
-            var fromBalance = from.Balance - amount;
-            if (fromBalance < 0m)
-            {
-                throw new InvalidOperationException("Insufficient funds to make transfer");
-            }
+			var fromBalance = from.Balance - amount;
+			if (fromBalance < 0m)
+			{
+				throw new InvalidOperationException("Insufficient funds to make transfer");
+			}
 
-            if (fromBalance < 500m)
-            {
-                this.notificationService.NotifyFundsLow(from.User.Email);
-            }
+			if (fromBalance < 500m)
+			{
+				this.notificationService.NotifyFundsLow(from.User.Email);
+			}
 
-            var paidIn = to.PaidIn + amount;
-            if (paidIn > Account.PayInLimit)
-            {
-                throw new InvalidOperationException("Account pay in limit reached");
-            }
+			var paidIn = to.PaidIn + amount;
+			if (paidIn > Account.PayInLimit)
+			{
+				throw new InvalidOperationException("Account pay in limit reached");
+			}
 
-            if (Account.PayInLimit - paidIn < 500m)
-            {
-                this.notificationService.NotifyApproachingPayInLimit(to.User.Email);
-            }
+			if (Account.PayInLimit - paidIn < 500m)
+			{
+				this.notificationService.NotifyApproachingPayInLimit(to.User.Email);
+			}
 
-            from.Balance = from.Balance - amount;
-            from.Withdrawn = from.Withdrawn - amount;
+			from.UpdateBalance(amount * -1);
+			from.UpdateWithdrawn(amount);
 
-            to.Balance = to.Balance + amount;
-            to.PaidIn = to.PaidIn + amount;
+			to.UpdateBalance(amount);
+			to.UpdatePaidIn(amount);
 
-            this.accountRepository.Update(from);
-            this.accountRepository.Update(to);
-        }
+			this.accountRepository.Update(from);
+			this.accountRepository.Update(to);
+		}
     }
 }
